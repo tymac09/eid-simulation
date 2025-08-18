@@ -67,7 +67,7 @@ DATABASES = {
         'HOST': config('DB_HOST', default='localhost'),
         'PORT': config('DB_PORT', default=5432, cast=int),
         'OPTIONS': {
-            'sslmode': 'require',   # <-- Neon needs SSL
+            'sslmode': 'require',   
         },
     }
 }
