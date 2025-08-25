@@ -1,0 +1,61 @@
+{% load humanize %}
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Tax Return PDF</title>
+  <style>
+    /* xhtml2pdf supports a conservative subset of CSS */
+    body { font-family: Helvetica, Arial, sans-serif; font-size: 12px; }
+    h1 { font-size: 18px; margin-bottom: 6px; }
+    .muted { color: #555; font-size: 10px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+    th, td { border: 1px solid #999; padding: 6px; }
+    .right { text-align: right; }
+    .section { margin-top: 12px; }
+  </style>
+</head>
+<body>
+  <h1>Tax Return Summary ({{ return.tax_year.country }}-{{ return.tax_year.year }})</h1>
+  <div class="muted">
+    User: {{ user.username }} • Generated: {{ now }} • Status: {{ return.status }}
+  </div>
+
+  <div class="section">
+    <table>
+      <tr><th>Gross income</th><td class="right">{{ return.gross_income|floatformat:2 }}</td></tr>
+      <tr><th>Total deductions</th><td class="right">- {{ return.total_deductions|floatformat:2 }}</td></tr>
+      <tr><th>Taxable income</th><td class="right">{{ return.taxable_income|floatformat:2 }}</td></tr>
+      <tr><th>Income tax</th><td class="right">- {{ return.income_tax|floatformat:2 }}</td></tr>
+      <tr><th>Contributions</th><td class="right">- {{ return.contributions|floatformat:2 }}</td></tr>
+      <tr><th><strong>Net income</strong></th><td class="right"><strong>{{ return.net_income|floatformat:2 }}</strong></td></tr>
+    </table>
+  </div>
+
+  <div class="section">
+    <strong>Income entries</strong>
+    <table>
+      <tr><th>Source</th><th class="right">Amount</th></tr>
+      {% for inc in incomes %}
+        <tr><td>{{ inc.source }}</td><td class="right">{{ inc.amount|floatformat:2 }}</td></tr>
+      {% empty %}
+        <tr><td colspan="2">No income entries</td></tr>
+      {% endfor %}
+    </table>
+  </div>
+
+  <div class="section">
+    <strong>Deduction entries</strong>
+    <table>
+      <tr><th>Label</th><th class="right">Amount</th></tr>
+      {% for d in deductions %}
+        <tr><td>{{ d.label }}</td><td class="right">{{ d.amount|floatformat:2 }}</td></tr>
+      {% empty %}
+        <tr><td colspan="2">No deduction entries</td></tr>
+      {% endfor %}
+    </table>
+  </div>
+
+  <p class="muted">Educational use only — not official e-filing.</p>
+</body>
+</html>

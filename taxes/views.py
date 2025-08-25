@@ -7,6 +7,10 @@ from .serializers import (
     IncomeEntrySerializer, DeductionEntrySerializer, TaxReturnSerializer,
 )
 from .services import compute_summary
+from django.utils.timezone import localtime
+from django.http import HttpResponse
+from django.shortcuts import get_object_or_404, render
+from .utils_pdf import render_to_pdf
 
 
 class PreviewReturnView(views.APIView):
@@ -125,3 +129,44 @@ class TaxReturnViewSet(mixins.ListModelMixin,
             tr.save()
 
         return Response({**summary, "submitted": submit}, status=status.HTTP_200_OK)
+    
+class ReturnHTMLView(views.APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, pk: int):
+        tr = get_object_or_404(TaxReturn, pk=pk, user=request.user)
+        incomes = IncomeEntry.objects.filter(user=request.user, tax_year=tr.tax_year)
+        deductions = DeductionEntry.objects.filter(user=request.user, tax_year=tr.tax_year)
+        ctx = {
+            "return": tr,
+            "user": request.user,
+            "incomes": incomes,
+            "deductions": deductions,
+            "now": localtime(),
+        }
+        # Return regular HTML page (so you can open it via Swagger)
+        return render(request, "taxes/return_detail.html", ctx)
+
+
+class ReturnPDFView(views.APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, pk: int):
+        tr = get_object_or_404(TaxReturn, pk=pk, user=request.user)
+        incomes = IncomeEntry.objects.filter(user=request.user, tax_year=tr.tax_year)
+        deductions = DeductionEntry.objects.filter(user=request.user, tax_year=tr.tax_year)
+        ctx = {
+            "return": tr,
+            "user": request.user,
+            "incomes": incomes,
+            "deductions": deductions,
+            "now": localtime(),
+        }
+        pdf_bytes, err = render_to_pdf("taxes/return_pdf.html", ctx)
+        if err or not pdf_bytes:
+            return Response({"detail": "Failed to generate PDF"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        filename = f"{tr.tax_year.country}-{tr.tax_year.year}-return-{tr.id}.pdf"
+        resp = HttpResponse(pdf_bytes, content_type="application/pdf")
+        resp["Content-Disposition"] = f'attachment; filename="{filename}"'
+        resp["X-Content-Type-Options"] = "nosniff"
+        return resp

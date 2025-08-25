@@ -1,0 +1,78 @@
+{% load humanize %}
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Tax Return {{ return.tax_year.country }}-{{ return.tax_year.year }} #{{ return.id }}</title>
+  <style>
+    body { font-family: Arial, Helvetica, sans-serif; margin: 24px; }
+    .card { border: 1px solid #ddd; border-radius: 10px; padding: 16px; margin-bottom: 20px; }
+    .muted { color: #666; font-size: 14px; }
+    h1 { margin: 0 0 6px 0; }
+    h2 { margin: 20px 0 8px 0; font-size: 18px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+    th, td { border-bottom: 1px solid #eee; padding: 8px; text-align: left; }
+    .right { text-align: right; }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 999px; background: #eef; }
+    .row { display: flex; gap: 20px; }
+    .col { flex: 1; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Tax Return Summary</h1>
+    <div class="muted">Country: <strong>{{ return.tax_year.country }}</strong> &middot; Year: <strong>{{ return.tax_year.year }}</strong> &middot; Status: <span class="badge">{{ return.status }}</span></div>
+    <div class="muted">User: <strong>{{ user.username }}</strong> &middot; Generated: {{ now }}</div>
+  </div>
+
+  <div class="row">
+    <div class="card col">
+      <h2>Totals</h2>
+      <table>
+        <tr><th>Gross income</th><td class="right">{{ return.gross_income|floatformat:2 }}</td></tr>
+        <tr><th>Total deductions</th><td class="right">- {{ return.total_deductions|floatformat:2 }}</td></tr>
+        <tr><th>Taxable income</th><td class="right">{{ return.taxable_income|floatformat:2 }}</td></tr>
+        <tr><th>Income tax</th><td class="right">- {{ return.income_tax|floatformat:2 }}</td></tr>
+        <tr><th>Contributions</th><td class="right">- {{ return.contributions|floatformat:2 }}</td></tr>
+        <tr><th><strong>Net income</strong></th><td class="right"><strong>{{ return.net_income|floatformat:2 }}</strong></td></tr>
+      </table>
+    </div>
+
+    <div class="card col">
+      <h2>Download</h2>
+      <p><a href="/api/taxes/returns/{{ return.id }}/pdf/">Download PDF</a></p>
+      <p class="muted">Note: This educational PDF is not an official filing.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Lines (this year)</h2>
+    <div class="row">
+      <div class="col">
+        <strong>Income entries</strong>
+        <table>
+          <tr><th>Source</th><th class="right">Amount</th></tr>
+          {% for inc in incomes %}
+            <tr><td>{{ inc.source }}</td><td class="right">{{ inc.amount|floatformat:2 }}</td></tr>
+          {% empty %}
+            <tr><td colspan="2" class="muted">No income entries.</td></tr>
+          {% endfor %}
+        </table>
+      </div>
+      <div class="col">
+        <strong>Deduction entries</strong>
+        <table>
+          <tr><th>Label</th><th class="right">Amount</th></tr>
+          {% for d in deductions %}
+            <tr><td>{{ d.label }}</td><td class="right">{{ d.amount|floatformat:2 }}</td></tr>
+          {% empty %}
+            <tr><td colspan="2" class="muted">No deduction entries.</td></tr>
+          {% endfor %}
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <p class="muted">⚠ For education only — not official e-filing.</p>
+</body>
+</html>
